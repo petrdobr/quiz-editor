@@ -64,6 +64,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
 const props = defineProps({
   assignmentId: Number,
@@ -79,6 +80,8 @@ const showErrors = ref(false)
 const loading = ref(false)
 const error = ref(null)
 const saveSuccess = ref(false)
+
+const router = useRouter()
 
 const options = reactive([
   { text: '', correct: false },
@@ -187,9 +190,22 @@ async function saveAssignment() {
     const data = await res.json()
     saveSuccess.value = true
     console.log('Сохранено:', data)
+    resetForm()
+    router.push({ name: 'assignment-list' })
   } catch (err) {
     error.value = err.message
   }
+}
+
+function resetForm() {
+  question.value = ''
+  multiple.value = false
+  showPreview.value = false
+  showJSON.value = false
+  showErrors.value = false
+  options.splice(0, options.length, { text: '', correct: false }, { text: '', correct: false })
+  saveSuccess.value = false
+  error.value = null
 }
 </script>
 
