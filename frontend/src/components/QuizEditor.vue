@@ -64,6 +64,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { API_BASE_URL } from '../config/api'
 
 const props = defineProps({
   assignmentId: Number,
@@ -91,7 +92,7 @@ async function loadAssignment() {
 
   loading.value = true
   try {
-    const res = await fetch(`http://localhost:8001/api/assignments/${props.assignmentId}`)
+    const res = await fetch(`${API_BASE_URL}/assignments/${props.assignmentId}`)
     if (!res.ok) throw new Error('Ошибка загрузки задания')
     const data = await res.json()
 
@@ -173,8 +174,8 @@ async function saveAssignment() {
 
   try {
     const url = props.isEdit
-      ? `http://localhost:8001/api/assignments/${props.assignmentId}`
-      : `http://localhost:8001/api/assignments`
+      ? `${API_BASE_URL}/assignments/${props.assignmentId}`
+      : `${API_BASE_URL}/assignments`
     const method = props.isEdit ? 'PUT' : 'POST'
 
     const res = await fetch(url, {
