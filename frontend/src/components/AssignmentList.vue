@@ -46,6 +46,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { API_BASE_URL } from '../config/api'
 
 const assignments = ref([])
 const error = ref(null)
@@ -53,7 +54,7 @@ const router = useRouter()
 
 async function fetchAssignments() {
   try {
-    const res = await fetch('http://localhost:8001/api/assignments')
+    const res = await fetch(`${API_BASE_URL}/assignments`)
     if (!res.ok) throw new Error('Ошибка загрузки заданий')
     assignments.value = await res.json()
   } catch (e) {
@@ -64,7 +65,7 @@ async function fetchAssignments() {
 async function deleteAssignment(id) {
   if (!confirm('Удалить задание?')) return
   try {
-    const res = await fetch(`http://localhost:8001/api/assignments/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${API_BASE_URL}/assignments/${id}`, { method: 'DELETE' })
     if (!res.ok) throw new Error('Ошибка удаления')
     assignments.value = assignments.value.filter(a => a.id !== id)
   } catch (e) {

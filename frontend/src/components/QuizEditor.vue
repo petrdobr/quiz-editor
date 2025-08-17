@@ -19,7 +19,7 @@
     <div v-for="(option, index) in options" :key="index" class="mb-2 d-flex align-items-center">
       <span class="me-2">{{ multiple ? '✓' : index + 1 }}.</span>
       <input type="text" class="form-control me-2" v-model="option.text" :class="{'is-invalid': showErrors && !option.text.trim()}">
-      <input :type="multiple ? 'checkbox' : 'radio'" :name="'correct'" v-model="option.correct" :checked="option.correct" @change="toggleCorrect(index)">
+      <input :type="multiple ? 'checkbox' : 'radio'" :name="'correct'" :checked="multiple ? option.correct : selectedIndex === index" @change="toggleCorrect(index)">
       <button class="btn btn-danger btn-sm ms-2" @click="removeOption(index)" :disabled="options.length <= 2">×</button>
       <div class="invalid-feedback d-block" v-if="showErrors && !option.text.trim()">Заполните вариант</div>
     </div>
@@ -66,6 +66,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 
+
 const props = defineProps({
   assignmentId: Number,
   isEdit: Boolean
@@ -80,6 +81,7 @@ const showErrors = ref(false)
 const loading = ref(false)
 const error = ref(null)
 const saveSuccess = ref(false)
+const selectedIndex = ref(-1)
 
 const router = useRouter()
 
@@ -94,16 +96,25 @@ async function loadAssignment() {
 
   loading.value = true
   try {
-    const res = await fetch(`http://localhost:8001/api/assignments/${props.assignmentId}`)
+    const res = await fetch(`${API_BASE_URL}/assignments/${props.assignmentId}`)
     if (!res.ok) throw new Error('Ошибка загрузки задания')
     const data = await res.json()
 
     question.value = data.spec.question
     multiple.value = data.spec.multiple
-    options.splice(0, options.length, ...data.spec.options.map((text, i) => ({
-      text,
-      correct: data.spec.correct.includes(i)
-    })))
+    if (multiple.value) {
+      options.splice(0, options.length, ...data.spec.options.map((text, i) => ({
+        text,
+        correct: data.spec.correct.includes(i)
+      })))
+      selectedIndex.value = -1
+    } else {
+      selectedIndex.value = data.spec.correct[0] ?? -1
+      options.splice(0, options.length, ...data.spec.options.map(text => ({
+        text,
+        correct: false
+      })))
+    }
   } catch (err) {
     error.value = err.message
   } finally {
@@ -119,11 +130,18 @@ function addOption() {
 
 function removeOption(index) {
   options.splice(index, 1)
+  if (!multiple.value) {
+    if (selectedIndex.value === index) {
+      selectedIndex.value = -1
+    } else if (selectedIndex.value > index) {
+      selectedIndex.value--
+    }
+  }
 }
 
 function toggleCorrect(index) {
   if (!multiple.value) {
-    options.forEach((opt, i) => opt.correct = i === index)
+    selectedIndex.value = index
   } else {
     options[index].correct = !options[index].correct
   }
@@ -135,7 +153,7 @@ function validate() {
     options.length >= 2 &&
     options.length <= 6 &&
     options.every(opt => opt.text.trim()) &&
-    options.some(opt => opt.correct)
+    (multiple.value ? options.some(opt => opt.correct) : selectedIndex.value !== -1)
   )
 }
 
@@ -143,7 +161,9 @@ const outputJSON = computed(() => ({
   type: 'quiz',
   question: question.value,
   options: options.map(o => o.text),
-  correct: options.map((o, i) => o.correct ? i : -1).filter(i => i !== -1),
+  correct: multiple.value
+    ? options.map((o, i) => o.correct ? i : -1).filter(i => i !== -1)
+    : selectedIndex.value !== -1 ? [selectedIndex.value] : [],
   multiple: multiple.value
 }))
 
@@ -176,8 +196,8 @@ async function saveAssignment() {
 
   try {
     const url = props.isEdit
-      ? `http://localhost:8001/api/assignments/${props.assignmentId}`
-      : `http://localhost:8001/api/assignments`
+      ? `${API_BASE_URL}/assignments/${props.assignmentId}`
+      : `${API_BASE_URL}/assignments`
     const method = props.isEdit ? 'PUT' : 'POST'
 
     const res = await fetch(url, {
