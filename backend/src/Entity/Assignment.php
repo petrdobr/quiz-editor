@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\AssignmentRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AssignmentRepository::class)]
 class Assignment
@@ -17,12 +18,15 @@ class Assignment
     private ?int $userId = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
     private ?string $title = null;
 
     #[ORM\Column(length: 50)]
+    #[Assert\NotBlank]
     private ?string $type = null;
 
     #[ORM\Column]
+    #[Assert\NotNull]
     private array $spec = [];
 
     #[ORM\Column]

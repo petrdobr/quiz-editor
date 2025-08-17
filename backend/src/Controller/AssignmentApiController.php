@@ -45,6 +45,11 @@ class AssignmentApiController extends AbstractController
             return $this->json($errors, 400);
         }
 
+        $specErrors = $this->validateSpec($assignment->getSpec());
+        if (!empty($specErrors)) {
+            return $this->json($specErrors, 400);
+        }
+
         $em->persist($assignment);
         $em->flush();
 
@@ -71,6 +76,11 @@ class AssignmentApiController extends AbstractController
             return $this->json($errors, 400);
         }
 
+        $specErrors = $this->validateSpec($assignment->getSpec());
+        if (!empty($specErrors)) {
+            return $this->json($specErrors, 400);
+        }
+
         $em->flush();
         return $this->json($assignment);
     }
@@ -81,5 +91,18 @@ class AssignmentApiController extends AbstractController
         $em->remove($assignment);
         $em->flush();
         return $this->json(['status' => 'deleted']);
+    }
+
+    private function validateSpec(array $spec): array
+    {
+        $errors = [];
+        if (!isset($spec['question']) || trim((string) $spec['question']) === '') {
+            $errors[] = 'Question text is required.';
+        }
+        if (!isset($spec['options']) || !is_array($spec['options']) || count($spec['options']) < 2) {
+            $errors[] = 'At least two options are required.';
+        }
+
+        return $errors;
     }
 }
